@@ -1,2 +1,4 @@
 fileformat.txt
+*.db
 .venv/
+__pycache__/
