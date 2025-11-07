@@ -117,16 +117,31 @@ def change_account_type(acc_number: str, acc_type: str):
 
 
 # * ------------------ Transaction ------------------
-def add_transaction():
-    pass
+def add_transaction(
+    acc_id: int, ttype: str, amount: float, target_account: str | None = None
+):
+    with Connection() as conn:
+        conn.execute(
+            "INSERT INTO `transactions` (`account_id`, `type`, `amount`, `target_account`) VALUES (?, ?, ?, ?)",
+            (acc_id, ttype, amount, target_account),
+        )
 
 
-def get_transaction_by_id():
-    pass
+def get_transaction_by_id(trans_id: int):
+    with Connection() as conn:
+        cursor = conn.execute(
+            "SELECT * FROM `transactions` WHERE `id` = ?", (trans_id,)
+        )
+        return cursor.fetchone()
 
 
-def get_all_transactions_for_account():
-    pass
+def get_all_transactions_for_account(acc_id: int, ttype: str | None = None):
+    with Connection() as conn:
+        cursor = conn.execute(
+            "SELECT * FROM `transactions` WHERE `account_id` = ? AND (? IS NULL OR `type` = ?)",
+            (acc_id, ttype, ttype),
+        )
+        return cursor.fetchall()
 
 
 # * ------------------ Utils ------------------
