@@ -31,4 +31,3 @@ CREATE TABLE IF NOT EXISTS `transactions` (
 
 CREATE INDEX IF NOT EXISTS `idx_acc_usr_id` ON `accounts`(`user_id`);
 CREATE INDEX IF NOT EXISTS `idx_trans_acc_id` ON `transactions`(`account_id`);
-
