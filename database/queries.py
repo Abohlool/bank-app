@@ -1,4 +1,4 @@
-from database.connection import Connection
+from connection import Connection
 
 
 # * ------------------ Users ------------------
@@ -7,7 +7,7 @@ def create_user(full_name: str, birthday: str, pin_hash: str):
     with Connection() as conn:
         conn.execute(
             "INSERT INTO `users` (`full_name`, `birthday`, `pin_hash`) VALUES (?, ?, ?)",
-            (full_name, birthday, pin_hash)
+            (full_name, birthday, pin_hash),
         )
 
 
@@ -30,7 +30,7 @@ def update_user_info(user_id: int, full_name: str, pin_hash: str):
     with Connection() as conn:
         conn.execute(
             "UPDATE  `users` SET `full_name` = ?, `pin_hash` = ? WHERE `id` = ?",
-            (full_name, pin_hash, user_id)
+            (full_name, pin_hash, user_id),
         )
 
 
@@ -39,29 +39,81 @@ def delete_user(user_id: int, full_name: str, pin_hash: str):
     with Connection() as conn:
         conn.execute(
             "DELETE FROM `users` WHERE `id` = ? AND `full_name` = ? AND `pin_hash` = ?",
-            (user_id, full_name, pin_hash)
+            (user_id, full_name, pin_hash),
         )
 
 
 # * ------------------ Accounts ------------------
-def create_account():
-    pass
+def create_account(user_id: int, acc_number: str, acc_type: str):
+    """Insert a new account into the `accounts` table."""
+    with Connection() as conn:
+        conn.execute(
+            "INSERT INTO `accounts` (`user_id`, `account_number`, `account_type`) VALUES (?, ?, ?)",
+            (user_id, acc_number, acc_type),
+        )
 
 
-def get_account_by_number():
-    pass
+def get_account_by_number(acc_number: str):
+    """Return a account record by `account_number`."""
+    with Connection() as conn:
+        cursor = conn.execute(
+            "SELCET * FROM `accounts` WHERE `account_number` = ?", (acc_number,)
+        )
+        return cursor.fetchone()
 
 
-def get_all_accounts_for_user():
-    pass
+def get_all_accounts_for_user(user_id: int):
+    """Return every account record for a `user_id`."""
+    with Connection() as conn:
+        cursor = conn.execute(
+            "SELECT * FROM `accounts` WHERE `user_id` = ?", (user_id,)
+        )
+        return cursor.fetchall()
 
 
-def delete_account():
-    pass
+def delete_account(user_id: int, acc_number: str):
+    """Delete a account after transfering funds to another account if exists."""
+
+    def check(idx, l):
+        if idx + 1 > l:
+            return 1
+        elif idx - 1 > 0:
+            return -1
+        else:
+            return 0
+
+    def delete(conn, acc_number):
+        conn.execute("DELETE FROM `accounts` WHERE `account_number` = ?", (acc_number,))
+
+    with Connection() as conn:
+        accounts = get_all_accounts_for_user(user_id)
+
+        target, idx = [(a, i) for i, a in enumerate(accounts) if a[2] == acc_number][0]
+
+        if target[4] == 0:
+            delete(conn, acc_number)
+            return
+
+        res = check(idx, len(accounts))
+        if res != 0:
+            conn.execute(
+                "UPDATE `accounts` SET `balance` = `balance` + ? WHERE `id` = ?",
+                (target[4], accounts[idx + res][0]),
+            )
+
+            delete(conn, acc_number)
+            return
+        else:
+            raise
 
 
-def update_account_info():
-    pass
+def change_account_type(acc_number: str, acc_type: str):
+    """Update `account_type`."""
+    with Connection() as conn:
+        conn.execute(
+            "UPDATE `accounts` SET `account_type` = ? WHERE `account_number` = ?",
+            (acc_type, acc_number),
+        )
 
 
 # * ------------------ Transaction ------------------
