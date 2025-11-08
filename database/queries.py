@@ -21,7 +21,9 @@ def get_user_by_id(user_id: int):
 def get_user_by_name(name: str):
     """Return all users with `full_name` matching the input name."""
     with Connection() as conn:
-        cursor = conn.execute("SELECT * FROM `users` WHERE `full_name` LIKE ?", (name,))
+        cursor = conn.execute(
+            "SELECT * FROM `users` WHERE `full_name` LIKE ?", (f"%{name}%",)
+        )
         return cursor.fetchall()
 
 
@@ -57,7 +59,7 @@ def get_account_by_number(acc_number: str):
     """Return a account record by `account_number`."""
     with Connection() as conn:
         cursor = conn.execute(
-            "SELCET * FROM `accounts` WHERE `account_number` = ?", (acc_number,)
+            "SELECT * FROM `accounts` WHERE `account_number` = ?", (acc_number,)
         )
         return cursor.fetchone()
 
@@ -75,6 +77,10 @@ def delete_account(user_id: int, acc_number: str):
     """Delete a account after transfering funds to another account if exists."""
 
     def check(idx, l):
+        if l == 1:
+            return 0
+        if idx == 0:
+            return 1
         if idx + 1 > l:
             return 1
         elif idx - 1 > 0:
@@ -104,7 +110,7 @@ def delete_account(user_id: int, acc_number: str):
             delete(conn, acc_number)
             return
         else:
-            raise
+            raise  # TODO No other accounts
 
 
 def change_account_type(acc_number: str, acc_type: str):
@@ -145,17 +151,40 @@ def get_all_transactions_for_account(acc_id: int, ttype: str | None = None):
 
 
 # * ------------------ Utils ------------------
-def update_balance():
-    pass
+def update_balance(acc_id: int, amount: float):
+    with Connection() as conn:
+        conn.execute(
+            "UPDATE `accounts` SET `balance` = `balance` + ? WHERE `id` = ?",
+            (amount, acc_id),
+        )
 
 
-def check_account_balance():
-    pass
+def transfer_funds(origin_id: int, target_id: int, amount: float):
+    with Connection() as conn:
+        cursor = conn.execute(
+            "SELECT `balance` FROM `accounts` WHERE `id` = ?", (origin_id,)
+        )
+        origin_balance = cursor.fetchone()[0]
+        if origin_balance > amount:
+            update_balance(origin_id, -amount)
+            add_transaction(origin_id, "transfer_out", amount, target_id)
+            update_balance(target_id, amount)
+            add_transaction(target_id, "transfer_in", amount, origin_id)
+        else:
+            raise  # TODO insufficient funds
 
 
-def find_user():
-    pass
+def check_account_balance(acc_id: int):
+    with Connection() as conn:
+        cursor = conn.execute(
+            "SELECT `balance` FROM `accounts` WHERE `id` = ?", (acc_id,)
+        )
+        return cursor.fetchone()
 
 
-def find_account_number():
-    pass
+def find_account_number(acc_number: str):
+    with Connection() as conn:
+        cursor = conn.execute(
+            "SELECT * FROM `accounts` WHERE `account_number` = ?", (acc_number,)
+        )
+        return cursor.fetchall()
