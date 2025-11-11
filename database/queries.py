@@ -79,14 +79,11 @@ def delete_account(user_id: int, acc_number: str):
     def check(idx, l):
         if l == 1:
             return 0
-        if idx == 0:
+        if idx < l - 1:
             return 1
-        if idx + 1 > l:
-            return 1
-        elif idx - 1 > 0:
+        if idx > 0:
             return -1
-        else:
-            return 0
+        return 0
 
     def delete(conn, acc_number):
         conn.execute("DELETE FROM `accounts` WHERE `account_number` = ?", (acc_number,))
@@ -94,7 +91,7 @@ def delete_account(user_id: int, acc_number: str):
     with Connection() as conn:
         accounts = get_all_accounts_for_user(user_id)
 
-        target, idx = [(a, i) for i, a in enumerate(accounts) if a[2] == acc_number][0]
+        target, idx = [(a, i) for i, a in enumerate(accounts) if a[2] == acc_number]
 
         if target[4] == 0:
             delete(conn, acc_number)
@@ -106,7 +103,7 @@ def delete_account(user_id: int, acc_number: str):
                 "UPDATE `accounts` SET `balance` = `balance` + ? WHERE `id` = ?",
                 (target[4], accounts[idx + res][0]),
             )
-
+            
             delete(conn, acc_number)
             return
         else:
