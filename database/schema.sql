@@ -24,8 +24,9 @@ CREATE TABLE IF NOT EXISTS `transactions` (
     `type` TEXT CHECK(`type` IN ('deposit', 'withdrawal', 'transfer_out', 'transfer_in')) NOT NULL,
     `amount` NUMERIC CHECK(`amount` > 0) NOT NULL,
     `timestamp` TEXT DEFAULT CURRENT_TIMESTAMP,
-    `target_account` TEXT,
-    FOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`)
+    `target_account_id` INTEGER,
+    FOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`),
+    FOREIGN KEY (`target_account_id`) REFERENCES `accounts`(`id`)
 );
 
 
